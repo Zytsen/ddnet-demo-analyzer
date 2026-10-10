@@ -17,9 +17,10 @@ main{padding:0 16px 24px;max-width:1200px;margin:auto}.card{background:var(--car
 const HU=(()=>{let L=FREQ.map((f,i)=>[i,f]),lo=[],hi=[],id=257,n=257;while(n>1){L=L.slice(0,n).sort((a,b)=>b[1]-a[1]);const a=L[n-1],b=L[n-2];lo[id]=a[0];hi[id]=b[0];b[0]=id;b[1]+=a[1];id++;n--}return{lo,hi,root:id-1}})();
 function huff(u,s,e){const o=[],{lo,hi,root}=HU;let n=root;for(let i=s;i<e;i++){const c=u[i];for(let k=0;k<8;k++){n=(c>>k)&1?hi[n]:lo[n];if(n<257){if(n==256)return o;o.push(n);n=root}}}return o}
 function vint(o){const r=[];let p=0;while(p<o.length){let x=o[p++],sg=(x>>6)&1,v=x&63,sh=6;while(x&128){x=o[p++];v+=(x&127)*2**sh;sh+=7}r.push(sg?-v-1:v)}return r}
+const UC=[1993229659,-102024632,-1378361269,-1810037668],UP=[583701389,327171627,-1636052395,-1901674991]; // UUIDs of DDNetCharacter / DDNetPlayer (the type ids they get differ per server)
 const SZ={1:10,2:6,3:5,4:4,5:3,6:8,7:4,8:15,9:22,10:5,11:17,12:3,13:2,14:2,15:2,16:2,17:3,18:3,19:3,20:3},TD=new TextDecoder();
 const tws=(v,a,b)=>{const o=[];for(let i=a;i<b;i++)for(const sh of[24,16,8,0])o.push((((v[i]>>>sh)&255)-128)&255);let z=o.indexOf(0);return TD.decode(new Uint8Array(z<0?o:o.slice(0,z)))};
-function delta(prev,I){const nd=I[0],nu=I[1];let p=3;const n=new Map(prev);for(let i=0;i<nd;i++)n.delete(I[p++]);for(let i=0;i<nu;i++){const t=I[p++],id=I[p++];const sz=SZ[t]??I[p++];const k=(t<<16)|id;let d=I.slice(p,p+sz);p+=sz;const o=prev.get(k);if(o&&o.length==sz)d=d.map((a,j)=>(a+o[j])|0);n.set(k,d)}return n}
+function delta(prev,I){const nd=I[0],nu=I[1];let p=3;const n=prev;for(let i=0;i<nd;i++)n.delete(I[p++]);for(let i=0;i<nu;i++){const t=I[p++],id=I[p++];const sz=SZ[t]??I[p++];const k=(t<<16)|id;let d=I.slice(p,p+sz);p+=sz;const o=prev.get(k);if(o&&o.length==sz)d=d.map((a,j)=>(a+o[j])|0);n.set(k,d)}return n}
 const vi=(b,p)=>{let x=b[p++],sg=(x>>6)&1,v=x&63,sh=6;while(x&128){x=b[p++];v+=(x&127)*2**sh;sh+=7}return[sg?-v-1:v,p]};
 const rs=(b,p)=>{let e=p;while(b[e])e++;return[TD.decode(b.subarray(p,e)),e+1]};
 async function zl(u){return new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer())}
@@ -29,13 +30,13 @@ async function parseDemo(buf,prog){
  const msz=dv.getInt32(136),H={map:str(72,136),crc:dv.getUint32(140).toString(16).padStart(8,'0'),type:str(144,152),len:dv.getInt32(152),date:str(156,176).replace('_',' ')};
  let off=180+256,sha='';if(ver>=6){sha=[...u.subarray(off+16,off+48)].map(x=>x.toString(16).padStart(2,'0')).join('');off+=48}
  const mapB=u.slice(off,off+msz);let pos=off+msz,tick=0,snap=new Map,T0=null;
- const sess=[],cur={},cid_s={},raw={},hookl={},pst={},pz={},dl={},dts={};let nsn=0,hasPl=false;
- const onSnap=(t,s)=>{if(T0===null)T0=t;nsn++;const pres=new Set;
+ const sess=[],cur={},cid_s={},raw={},hookl={},pst={},pz={},dl={},dts={};let nsn=0,hasPl=false,xc=32765,xp=32766;
+ const onSnap=(t,s)=>{if(T0===null)T0=t;nsn++;for(let i=0;i<24;i++){const v=s.get(0x7fff-i);if(v&&v.length>=4){if(v[0]===UC[0]&&v[1]===UC[1]&&v[2]===UC[2]&&v[3]===UC[3])xc=0x7fff-i;else if(v[0]===UP[0]&&v[1]===UP[1]&&v[2]===UP[2]&&v[3]===UP[3])xp=0x7fff-i}}const pres=new Set;
   for(const[k,v]of s){if(k>>16==11){const c=k&65535;pres.add(c);const q=sess[cur[c]];if(q&&q.arr===v){q.s1=t;continue}const n=tws(v,0,4);if(!q||q.name!=n){sess.push({cid:c,name:n,clan:tws(v,4,7),country:v[7],skin:tws(v,8,14),s0:t,s1:t,arr:v});cur[c]=sess.length-1;(cid_s[c]=cid_s[c]||[]).push(cur[c])}else q.arr=v;sess[cur[c]].s1=t}}
   for(const c in cur)if(!pres.has(+c))delete cur[c];
-  for(const c in cur){const si=cur[c],ex=s.get((32766<<16)|+c),pi=s.get((10<<16)|+c);if(ex)hasPl=true;if(pi&&pi[0]==1)sess[si].loc=1;const f=ex?ex[0]:0,cd=(f&4)||(pi&&pi[2]<0)?3:f&2?2:f&1?1:0,q=pst[si];if(!q)pst[si]={cd,t,l:t};else{if(q.cd!=cd){if(q.cd)(pz[si]=pz[si]||[]).push([q.t,t,q.cd]);q.cd=cd;q.t=t}q.l=t}}
+  for(const c in cur){const si=cur[c],ex=s.get((xp<<16)|+c),pi=s.get((10<<16)|+c);if(ex)hasPl=true;if(pi&&pi[0]==1)sess[si].loc=1;const f=ex?ex[0]:0,cd=(f&4)||(pi&&pi[2]<0)?3:f&2?2:f&1?1:0,q=pst[si];if(!q)pst[si]={cd,t,l:t};else{if(q.cd!=cd){if(q.cd)(pz[si]=pz[si]||[]).push([q.t,t,q.cd]);q.cd=cd;q.t=t}q.l=t}}
   for(const[k,v]of s)if(k>>16==17){const si=cur[v[2]];if(si!==undefined&&!(si in dl&&t-dl[si]<25)){dl[si]=t;(dts[si]=dts[si]||[]).push(t)}}
-  for(const[k,v]of s){if(k>>16==9){const c=k&65535,si=cur[c];if(si===undefined)continue;const ex=s.get((32765<<16)|c),pi=s.get((10<<16)|c);(raw[si]=raw[si]||[]).push([t,v[1],v[2],v[3],v[4],v[8],v[9],v[6],v[7],ex&&(ex[0]&(1<<21))?1:0,pi?pi[4]:0,pi?pi[3]:0,undefined,v[0],v[11],v[12],v[13],v[14]]);
+  for(const[k,v]of s){if(k>>16==9){const c=k&65535,si=cur[c];if(si===undefined)continue;const ex=s.get((xc<<16)|c),pi=s.get((10<<16)|c);(raw[si]=raw[si]||[]).push([t,v[1],v[2],v[3],v[4],v[8],v[9],v[6],v[7],ex&&(ex[0]&(1<<21))?1:0,pi?pi[4]:0,pi?pi[3]:0,undefined,v[0],v[11],v[12],v[13],v[14]]);
    if(v[9]==5&&v[8]>=0){const tg=cur[v[8]];if(tg!==undefined&&tg!=si){(hookl[tg]=hookl[tg]||[]).push([t,si]);raw[si][raw[si].length-1][12]=tg}}}}};
  const msgs=[],ctr={},pg=(f,l)=>{if(prog)prog(f,l)};let errs=0,cn=0;
  while(pos<u.length){const c=u[pos++];if(c&128){if(c&32)tick+=c&31;else{tick=dv.getInt32(pos);pos+=4}continue}
@@ -49,15 +50,16 @@ async function parseDemo(buf,prog){
   for(let i=0;i<ni;i++){const s=i0+offs[i],tid=I(s);if(tid>>16==5){lay++;const sz=I(s+4)/4,it=[];for(let j=0;j<sz;j++)it.push(I(s+8+4*j));if(it[1]==2&&(it[6]&1)){W=it[4];H_=it[5];const q=it[14],e=ds+(q+1<nd?doffs[q+1]:dsz),d=await zl(mapB.subarray(ds+doffs[q],e));grid=new Uint8Array(W*H_);for(let k=0;k<W*H_;k++)grid[k]=d[k*4]}}}
   for(const g of grid)tiles[g]=(tiles[g]||0)+1}catch(e){W=H_=1;grid=new Uint8Array(1)}
 
- const gt=(x,y)=>grid[Math.min(H_-1,Math.max(0,Math.trunc(Math.floor(y+.5)/32)))*W+Math.min(W-1,Math.max(0,Math.trunc(Math.floor(x+.5)/32)))],solid=(x,y)=>{const g=gt(x,y);return g==1||g==3},tbox=(x,y)=>solid(x-14,y-14)||solid(x+14,y-14)||solid(x-14,y+14)||solid(x+14,y+14),sat=(mn,mx,c,m)=>{if(m<0){if(c<mn)return c;c+=m;return c<mn?mn:c}if(c>mx)return c;c+=m;return c>mx?mx:c};
+ const gt=(x,y)=>grid[Math.min(H_-1,Math.max(0,Math.trunc(Math.floor(y+.5)/32)))*W+Math.min(W-1,Math.max(0,Math.trunc(Math.floor(x+.5)/32)))],SG=new Uint8Array(grid.length),hyp=(a,b)=>Math.sqrt(a*a+b*b);for(let i=0;i<grid.length;i++)SG[i]=grid[i]==1||grid[i]==3?1:0;
+ const solid=(x,y)=>{let tx=Math.floor(x+.5)>>5,ty=Math.floor(y+.5)>>5;if(tx<0)tx=0;else if(tx>=W)tx=W-1;if(ty<0)ty=0;else if(ty>=H_)ty=H_-1;return SG[ty*W+tx]===1},tbox=(x,y)=>solid(x-14,y-14)||solid(x+14,y-14)||solid(x-14,y+14)||solid(x+14,y+14),sat=(mn,mx,c,m)=>{if(m<0){if(c<mn)return c;c+=m;return c<mn?mn:c}if(c>mx)return c;c+=m;return c>mx?mx:c};
  function stepCore(s){const gr=solid(s.x+14,s.y+19)||solid(s.x-14,s.y+19);s.vy+=.5;const ms=gr?10:5,ac=gr?2:1.5,fr=gr?.5:.95;
   if(s.dir<0)s.vx=sat(-ms,ms,s.vx,-ac);else if(s.dir>0)s.vx=sat(-ms,ms,s.vx,ac);else s.vx*=fr;
-  if(s.hs==4){let nx=s.hx+s.hdx*80,ny=s.hy+s.hdy*80;const dd=Math.hypot(nx-s.x,ny-s.y);if(dd>380){s.hs=1;nx=s.x+(nx-s.x)/dd*380;ny=s.y+(ny-s.y)/dd*380}
-   const N=Math.floor(Math.hypot(nx-s.hx,ny-s.hy))+1;let hit=0,ex=nx,ey=ny;for(let i=0;i<=N;i++){const f=i/N,px=s.hx+(nx-s.hx)*f,py=s.hy+(ny-s.hy)*f,q=gt(px,py);if(q==1||q==3){hit=q;ex=px;ey=py;break}}
+  if(s.hs==4){let nx=s.hx+s.hdx*80,ny=s.hy+s.hdy*80;const dd=hyp(nx-s.x,ny-s.y);if(dd>380){s.hs=1;nx=s.x+(nx-s.x)/dd*380;ny=s.y+(ny-s.y)/dd*380}
+   const N=Math.floor(hyp(nx-s.hx,ny-s.hy))+1;let hit=0,ex=nx,ey=ny;for(let i=0;i<=N;i++){const f=i/N,px=s.hx+(nx-s.hx)*f,py=s.hy+(ny-s.hy)*f,q=gt(px,py);if(q==1||q==3){hit=q;ex=px;ey=py;break}}
    if(s.hs==4){if(hit==1)s.hs=5;else if(hit==3)s.hs=1}s.hx=ex;s.hy=ey}
-  if(s.hs==5&&s.hp<0){const dx=s.hx-s.x,dy=s.hy-s.y,d=Math.hypot(dx,dy);if(d>46){let hx=dx/d*3,hy=dy/d*3;if(hy>0)hy*=.3;hx*=(hx<0&&s.dir<0)||(hx>0&&s.dir>0)?.95:.75;const nx=s.vx+hx,ny=s.vy+hy,nl=Math.hypot(nx,ny);if(nl<15||nl<Math.hypot(s.vx,s.vy)){s.vx=nx;s.vy=ny}}}
-  const L=Math.hypot(s.vx,s.vy);if(L>6000){s.vx*=6000/L;s.vy*=6000/L}
-  const rv=s.vx*50,ramp=rv<550?1:1/Math.pow(1.4,(rv-550)/2000);let px=s.x,py=s.y,vx=s.vx*ramp,vy=s.vy;const dist=Math.hypot(vx,vy),mx=Math.floor(dist);
+  if(s.hs==5&&s.hp<0){const dx=s.hx-s.x,dy=s.hy-s.y,d=hyp(dx,dy);if(d>46){let hx=dx/d*3,hy=dy/d*3;if(hy>0)hy*=.3;hx*=(hx<0&&s.dir<0)||(hx>0&&s.dir>0)?.95:.75;const nx=s.vx+hx,ny=s.vy+hy,nl=hyp(nx,ny);if(nl<15||nl<hyp(s.vx,s.vy)){s.vx=nx;s.vy=ny}}}
+  const L=hyp(s.vx,s.vy);if(L>6000){s.vx*=6000/L;s.vy*=6000/L}
+  const rv=s.vx*50,ramp=rv<550?1:1/Math.pow(1.4,(rv-550)/2000);let px=s.x,py=s.y,vx=s.vx*ramp,vy=s.vy;const dist=hyp(vx,vy),mx=Math.floor(dist);
   if(dist>1e-5){const f2=1/(mx+1);for(let i=0;i<=mx;i++){let nx=px+vx*f2,ny=py+vy*f2;if(tbox(nx,ny)){let h=0;if(tbox(px,ny)){ny=py;vy=0;h++}if(tbox(nx,py)){nx=px;vx=0;h++}if(!h){ny=py;vy=0;nx=px;vx=0}}px=nx;py=ny}}
   s.vx=Math.trunc(vx/ramp*256)/256;s.vy=Math.trunc(vy*256)/256;s.x=Math.floor(px+.5);s.y=Math.floor(py+.5)}
  function reckon(R,off){let st=null;for(const r of R){const tc=r[13];if(!tc){st=null;continue}
@@ -94,10 +96,17 @@ async function parseDemo(buf,prog){
  const cnt={};merged.forEach(p=>{const k=cnt[p.name]=(cnt[p.name]||0)+1;if(k>1)p.name+=` (client ${k})`});   // same person with two clients at once
  out.splice(0,out.length,...merged)}
 ev.sort((a,b)=>a[0]-b[0]);
- pg(.96,'Detecting teams');const mem={},op={},segs=[],lv=(n,t)=>{const tm=mem[n];delete mem[n];if(tm in op){op[tm].cur.delete(n);op[tm].e=t;if(!op[tm].cur.size)delete op[tm]}},jn=(n,tm,t)=>{lv(n,t);if(!tm)return;mem[n]=tm;if(!(tm in op)){op[tm]={team:tm,s:t,e:t,m:[],fin:null,fs:null,go:null,cur:new Set};segs.push(op[tm])}op[tm].cur.add(n);if(!op[tm].m.includes(n))op[tm].m.push(n)};
+ pg(.96,'Detecting teams');const mem={},op={},segs=[],fins=[],lv=(n,t)=>{const tm=mem[n];delete mem[n];if(tm in op){op[tm].cur.delete(n);op[tm].e=t;if(!op[tm].cur.size)delete op[tm]}},jn=(n,tm,t)=>{lv(n,t);if(!tm)return;mem[n]=tm;if(!(tm in op)){op[tm]={team:tm,s:t,e:t,m:[],fin:null,fs:null,go:null,cur:new Set};segs.push(op[tm])}op[tm].cur.add(n);if(!op[tm].m.includes(n))op[tm].m.push(n)};
  for(const[t,tx]of sysm){let g;if(g=tx.match(/^'(.+)' joined team (\d+)$/))jn(g[1],+g[2],t);if(g=tx.match(/^'(.+)' has left the game/))lv(g[1],t);if(g=tx.match(/^Team (\d+) started with \d+ players?: (.*)$/)){const tm=+g[1],L=g[2];for(const n of new Set([...out.flatMap(p=>p.names).filter(n=>(', '+L+', ').includes(', '+n+', ')),...L.split(', ')]))if(mem[n]!==tm)jn(n,tm,t);if(op[tm])op[tm].go=t}else if((g=tx.match(/^Team (\d+) started with/))&&op[+g[1]])op[+g[1]].go=t;
-  if((g=tx.match(/^(.+) finished in: (\d+) minute\(s\) ([\d.]+) second\(s\)$/))&&mem[g[1]]&&op[mem[g[1]]]&&op[mem[g[1]]].fin===null){const o=op[mem[g[1]]];o.fin=g[2]+':'+parseFloat(g[3]).toFixed(2).padStart(5,'0');o.fs=t;o.e=t}}
- const dur=S(tick),teams=[];for(const o of segs){const pl=out.map((p,i)=>p.names.some(n=>o.m.includes(n))&&p.iv.some(([a,b])=>a<=o.e&&b>=o.s)?i:-1).filter(i=>i>=0);if(o.e==o.s&&!o.fin)o.e=dur;if(pl.length)teams.push({n:'Team '+o.team,s:o.s,e:o.e,pl,fin:o.fin,fs:o.fs,go:o.go,names:o.m})}
+  if(g=tx.match(/^(.+) finished in: (\d+) minute\(s\) +([\d.]+) second\(s\)$/)){fins.push({n:g[1],t,min:+g[2],sec:parseFloat(g[3])});if(mem[g[1]]&&op[mem[g[1]]]&&op[mem[g[1]]].fin===null){const o=op[mem[g[1]]];o.fin=g[2]+':'+parseFloat(g[3]).toFixed(2).padStart(5,'0');o.fs=t;o.e=t}}}
+ // everyone who finishes at the same moment with the same time was in one team (covers demos that start after the team formed or lack join/start messages)
+ const fg=[];for(const f of fins){const G=fg.find(x=>Math.abs(x.t-f.t)<1.5&&x.min==f.min&&x.sec==f.sec);G?G.n.push(f.n):fg.push({t:f.t,min:f.min,sec:f.sec,n:[f.n]})}
+ for(const G of fg){const fin=G.min+':'+G.sec.toFixed(2).padStart(5,'0'),run=G.min*60+G.sec,have=out.filter(p=>p.names.some(n=>G.n.includes(n))&&p.rt.length>=200),s0=segs.find(o=>o.fin===fin&&Math.abs(o.fs-G.t)<1.5);
+  if(s0){for(const n of G.n)if(!s0.m.includes(n))s0.m.push(n);continue}
+  if(!(have.some(p=>p.loc)||have.length>=2))continue;
+  segs.push({team:null,s:Math.max(0,G.t-run),e:G.t,m:G.n.slice(),fin,fs:G.t,go:Math.max(0,G.t-run)})}
+ const dur=S(tick),teams=[];for(const o of segs){const pl=out.map((p,i)=>p.names.some(n=>o.m.includes(n))&&p.iv.some(([a,b])=>a<=o.e&&b>=o.s)?i:-1).filter(i=>i>=0);if(o.e==o.s&&!o.fin)o.e=dur;if(pl.length)teams.push({n:o.team==null?`Team (finish ${o.fin})`:'Team '+o.team,s:o.s,e:o.e,pl,fin:o.fin,fs:o.fs,go:o.go,names:o.m})}
+ {const ri=out.findIndex(p=>p.loc);if(ri>=0&&!teams.some(t=>t.pl.includes(ri)))teams.push({n:'Recorder only (no team detected)',s:0,e:dur,pl:[ri],fin:null,fs:null,go:null,solo:true})}
  return{D:{p:out,teams,ev,W,H:H_,dur,date:H.date,map:H.map,crc:H.crc,sha:sha||'n/a (older demo version)',layers:lay,tiles,file:H.type,hasPl,diag:{ver,net:str(8,72),nsn,nmsg:msgs.length,ctr,errs,mapEmbedded:msz>0,mapOk:W>1}},G:grid,M:mapB}}
 
 // Worker entry point: runs parseDemo off the main thread. build.py embeds parser.js + this file into the page.
@@ -108,9 +117,10 @@ const FREQ=[1073741824,4545,2657,431,1950,919,444,482,2244,617,838,542,715,1814,
 const HU=(()=>{let L=FREQ.map((f,i)=>[i,f]),lo=[],hi=[],id=257,n=257;while(n>1){L=L.slice(0,n).sort((a,b)=>b[1]-a[1]);const a=L[n-1],b=L[n-2];lo[id]=a[0];hi[id]=b[0];b[0]=id;b[1]+=a[1];id++;n--}return{lo,hi,root:id-1}})();
 function huff(u,s,e){const o=[],{lo,hi,root}=HU;let n=root;for(let i=s;i<e;i++){const c=u[i];for(let k=0;k<8;k++){n=(c>>k)&1?hi[n]:lo[n];if(n<257){if(n==256)return o;o.push(n);n=root}}}return o}
 function vint(o){const r=[];let p=0;while(p<o.length){let x=o[p++],sg=(x>>6)&1,v=x&63,sh=6;while(x&128){x=o[p++];v+=(x&127)*2**sh;sh+=7}r.push(sg?-v-1:v)}return r}
+const UC=[1993229659,-102024632,-1378361269,-1810037668],UP=[583701389,327171627,-1636052395,-1901674991]; // UUIDs of DDNetCharacter / DDNetPlayer (the type ids they get differ per server)
 const SZ={1:10,2:6,3:5,4:4,5:3,6:8,7:4,8:15,9:22,10:5,11:17,12:3,13:2,14:2,15:2,16:2,17:3,18:3,19:3,20:3},TD=new TextDecoder();
 const tws=(v,a,b)=>{const o=[];for(let i=a;i<b;i++)for(const sh of[24,16,8,0])o.push((((v[i]>>>sh)&255)-128)&255);let z=o.indexOf(0);return TD.decode(new Uint8Array(z<0?o:o.slice(0,z)))};
-function delta(prev,I){const nd=I[0],nu=I[1];let p=3;const n=new Map(prev);for(let i=0;i<nd;i++)n.delete(I[p++]);for(let i=0;i<nu;i++){const t=I[p++],id=I[p++];const sz=SZ[t]??I[p++];const k=(t<<16)|id;let d=I.slice(p,p+sz);p+=sz;const o=prev.get(k);if(o&&o.length==sz)d=d.map((a,j)=>(a+o[j])|0);n.set(k,d)}return n}
+function delta(prev,I){const nd=I[0],nu=I[1];let p=3;const n=prev;for(let i=0;i<nd;i++)n.delete(I[p++]);for(let i=0;i<nu;i++){const t=I[p++],id=I[p++];const sz=SZ[t]??I[p++];const k=(t<<16)|id;let d=I.slice(p,p+sz);p+=sz;const o=prev.get(k);if(o&&o.length==sz)d=d.map((a,j)=>(a+o[j])|0);n.set(k,d)}return n}
 const vi=(b,p)=>{let x=b[p++],sg=(x>>6)&1,v=x&63,sh=6;while(x&128){x=b[p++];v+=(x&127)*2**sh;sh+=7}return[sg?-v-1:v,p]};
 const rs=(b,p)=>{let e=p;while(b[e])e++;return[TD.decode(b.subarray(p,e)),e+1]};
 async function zl(u){return new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer())}
@@ -120,13 +130,13 @@ async function parseDemo(buf,prog){
  const msz=dv.getInt32(136),H={map:str(72,136),crc:dv.getUint32(140).toString(16).padStart(8,'0'),type:str(144,152),len:dv.getInt32(152),date:str(156,176).replace('_',' ')};
  let off=180+256,sha='';if(ver>=6){sha=[...u.subarray(off+16,off+48)].map(x=>x.toString(16).padStart(2,'0')).join('');off+=48}
  const mapB=u.slice(off,off+msz);let pos=off+msz,tick=0,snap=new Map,T0=null;
- const sess=[],cur={},cid_s={},raw={},hookl={},pst={},pz={},dl={},dts={};let nsn=0,hasPl=false;
- const onSnap=(t,s)=>{if(T0===null)T0=t;nsn++;const pres=new Set;
+ const sess=[],cur={},cid_s={},raw={},hookl={},pst={},pz={},dl={},dts={};let nsn=0,hasPl=false,xc=32765,xp=32766;
+ const onSnap=(t,s)=>{if(T0===null)T0=t;nsn++;for(let i=0;i<24;i++){const v=s.get(0x7fff-i);if(v&&v.length>=4){if(v[0]===UC[0]&&v[1]===UC[1]&&v[2]===UC[2]&&v[3]===UC[3])xc=0x7fff-i;else if(v[0]===UP[0]&&v[1]===UP[1]&&v[2]===UP[2]&&v[3]===UP[3])xp=0x7fff-i}}const pres=new Set;
   for(const[k,v]of s){if(k>>16==11){const c=k&65535;pres.add(c);const q=sess[cur[c]];if(q&&q.arr===v){q.s1=t;continue}const n=tws(v,0,4);if(!q||q.name!=n){sess.push({cid:c,name:n,clan:tws(v,4,7),country:v[7],skin:tws(v,8,14),s0:t,s1:t,arr:v});cur[c]=sess.length-1;(cid_s[c]=cid_s[c]||[]).push(cur[c])}else q.arr=v;sess[cur[c]].s1=t}}
   for(const c in cur)if(!pres.has(+c))delete cur[c];
-  for(const c in cur){const si=cur[c],ex=s.get((32766<<16)|+c),pi=s.get((10<<16)|+c);if(ex)hasPl=true;if(pi&&pi[0]==1)sess[si].loc=1;const f=ex?ex[0]:0,cd=(f&4)||(pi&&pi[2]<0)?3:f&2?2:f&1?1:0,q=pst[si];if(!q)pst[si]={cd,t,l:t};else{if(q.cd!=cd){if(q.cd)(pz[si]=pz[si]||[]).push([q.t,t,q.cd]);q.cd=cd;q.t=t}q.l=t}}
+  for(const c in cur){const si=cur[c],ex=s.get((xp<<16)|+c),pi=s.get((10<<16)|+c);if(ex)hasPl=true;if(pi&&pi[0]==1)sess[si].loc=1;const f=ex?ex[0]:0,cd=(f&4)||(pi&&pi[2]<0)?3:f&2?2:f&1?1:0,q=pst[si];if(!q)pst[si]={cd,t,l:t};else{if(q.cd!=cd){if(q.cd)(pz[si]=pz[si]||[]).push([q.t,t,q.cd]);q.cd=cd;q.t=t}q.l=t}}
   for(const[k,v]of s)if(k>>16==17){const si=cur[v[2]];if(si!==undefined&&!(si in dl&&t-dl[si]<25)){dl[si]=t;(dts[si]=dts[si]||[]).push(t)}}
-  for(const[k,v]of s){if(k>>16==9){const c=k&65535,si=cur[c];if(si===undefined)continue;const ex=s.get((32765<<16)|c),pi=s.get((10<<16)|c);(raw[si]=raw[si]||[]).push([t,v[1],v[2],v[3],v[4],v[8],v[9],v[6],v[7],ex&&(ex[0]&(1<<21))?1:0,pi?pi[4]:0,pi?pi[3]:0,undefined,v[0],v[11],v[12],v[13],v[14]]);
+  for(const[k,v]of s){if(k>>16==9){const c=k&65535,si=cur[c];if(si===undefined)continue;const ex=s.get((xc<<16)|c),pi=s.get((10<<16)|c);(raw[si]=raw[si]||[]).push([t,v[1],v[2],v[3],v[4],v[8],v[9],v[6],v[7],ex&&(ex[0]&(1<<21))?1:0,pi?pi[4]:0,pi?pi[3]:0,undefined,v[0],v[11],v[12],v[13],v[14]]);
    if(v[9]==5&&v[8]>=0){const tg=cur[v[8]];if(tg!==undefined&&tg!=si){(hookl[tg]=hookl[tg]||[]).push([t,si]);raw[si][raw[si].length-1][12]=tg}}}}};
  const msgs=[],ctr={},pg=(f,l)=>{if(prog)prog(f,l)};let errs=0,cn=0;
  while(pos<u.length){const c=u[pos++];if(c&128){if(c&32)tick+=c&31;else{tick=dv.getInt32(pos);pos+=4}continue}
@@ -140,15 +150,16 @@ async function parseDemo(buf,prog){
   for(let i=0;i<ni;i++){const s=i0+offs[i],tid=I(s);if(tid>>16==5){lay++;const sz=I(s+4)/4,it=[];for(let j=0;j<sz;j++)it.push(I(s+8+4*j));if(it[1]==2&&(it[6]&1)){W=it[4];H_=it[5];const q=it[14],e=ds+(q+1<nd?doffs[q+1]:dsz),d=await zl(mapB.subarray(ds+doffs[q],e));grid=new Uint8Array(W*H_);for(let k=0;k<W*H_;k++)grid[k]=d[k*4]}}}
   for(const g of grid)tiles[g]=(tiles[g]||0)+1}catch(e){W=H_=1;grid=new Uint8Array(1)}
 
- const gt=(x,y)=>grid[Math.min(H_-1,Math.max(0,Math.trunc(Math.floor(y+.5)/32)))*W+Math.min(W-1,Math.max(0,Math.trunc(Math.floor(x+.5)/32)))],solid=(x,y)=>{const g=gt(x,y);return g==1||g==3},tbox=(x,y)=>solid(x-14,y-14)||solid(x+14,y-14)||solid(x-14,y+14)||solid(x+14,y+14),sat=(mn,mx,c,m)=>{if(m<0){if(c<mn)return c;c+=m;return c<mn?mn:c}if(c>mx)return c;c+=m;return c>mx?mx:c};
+ const gt=(x,y)=>grid[Math.min(H_-1,Math.max(0,Math.trunc(Math.floor(y+.5)/32)))*W+Math.min(W-1,Math.max(0,Math.trunc(Math.floor(x+.5)/32)))],SG=new Uint8Array(grid.length),hyp=(a,b)=>Math.sqrt(a*a+b*b);for(let i=0;i<grid.length;i++)SG[i]=grid[i]==1||grid[i]==3?1:0;
+ const solid=(x,y)=>{let tx=Math.floor(x+.5)>>5,ty=Math.floor(y+.5)>>5;if(tx<0)tx=0;else if(tx>=W)tx=W-1;if(ty<0)ty=0;else if(ty>=H_)ty=H_-1;return SG[ty*W+tx]===1},tbox=(x,y)=>solid(x-14,y-14)||solid(x+14,y-14)||solid(x-14,y+14)||solid(x+14,y+14),sat=(mn,mx,c,m)=>{if(m<0){if(c<mn)return c;c+=m;return c<mn?mn:c}if(c>mx)return c;c+=m;return c>mx?mx:c};
  function stepCore(s){const gr=solid(s.x+14,s.y+19)||solid(s.x-14,s.y+19);s.vy+=.5;const ms=gr?10:5,ac=gr?2:1.5,fr=gr?.5:.95;
   if(s.dir<0)s.vx=sat(-ms,ms,s.vx,-ac);else if(s.dir>0)s.vx=sat(-ms,ms,s.vx,ac);else s.vx*=fr;
-  if(s.hs==4){let nx=s.hx+s.hdx*80,ny=s.hy+s.hdy*80;const dd=Math.hypot(nx-s.x,ny-s.y);if(dd>380){s.hs=1;nx=s.x+(nx-s.x)/dd*380;ny=s.y+(ny-s.y)/dd*380}
-   const N=Math.floor(Math.hypot(nx-s.hx,ny-s.hy))+1;let hit=0,ex=nx,ey=ny;for(let i=0;i<=N;i++){const f=i/N,px=s.hx+(nx-s.hx)*f,py=s.hy+(ny-s.hy)*f,q=gt(px,py);if(q==1||q==3){hit=q;ex=px;ey=py;break}}
+  if(s.hs==4){let nx=s.hx+s.hdx*80,ny=s.hy+s.hdy*80;const dd=hyp(nx-s.x,ny-s.y);if(dd>380){s.hs=1;nx=s.x+(nx-s.x)/dd*380;ny=s.y+(ny-s.y)/dd*380}
+   const N=Math.floor(hyp(nx-s.hx,ny-s.hy))+1;let hit=0,ex=nx,ey=ny;for(let i=0;i<=N;i++){const f=i/N,px=s.hx+(nx-s.hx)*f,py=s.hy+(ny-s.hy)*f,q=gt(px,py);if(q==1||q==3){hit=q;ex=px;ey=py;break}}
    if(s.hs==4){if(hit==1)s.hs=5;else if(hit==3)s.hs=1}s.hx=ex;s.hy=ey}
-  if(s.hs==5&&s.hp<0){const dx=s.hx-s.x,dy=s.hy-s.y,d=Math.hypot(dx,dy);if(d>46){let hx=dx/d*3,hy=dy/d*3;if(hy>0)hy*=.3;hx*=(hx<0&&s.dir<0)||(hx>0&&s.dir>0)?.95:.75;const nx=s.vx+hx,ny=s.vy+hy,nl=Math.hypot(nx,ny);if(nl<15||nl<Math.hypot(s.vx,s.vy)){s.vx=nx;s.vy=ny}}}
-  const L=Math.hypot(s.vx,s.vy);if(L>6000){s.vx*=6000/L;s.vy*=6000/L}
-  const rv=s.vx*50,ramp=rv<550?1:1/Math.pow(1.4,(rv-550)/2000);let px=s.x,py=s.y,vx=s.vx*ramp,vy=s.vy;const dist=Math.hypot(vx,vy),mx=Math.floor(dist);
+  if(s.hs==5&&s.hp<0){const dx=s.hx-s.x,dy=s.hy-s.y,d=hyp(dx,dy);if(d>46){let hx=dx/d*3,hy=dy/d*3;if(hy>0)hy*=.3;hx*=(hx<0&&s.dir<0)||(hx>0&&s.dir>0)?.95:.75;const nx=s.vx+hx,ny=s.vy+hy,nl=hyp(nx,ny);if(nl<15||nl<hyp(s.vx,s.vy)){s.vx=nx;s.vy=ny}}}
+  const L=hyp(s.vx,s.vy);if(L>6000){s.vx*=6000/L;s.vy*=6000/L}
+  const rv=s.vx*50,ramp=rv<550?1:1/Math.pow(1.4,(rv-550)/2000);let px=s.x,py=s.y,vx=s.vx*ramp,vy=s.vy;const dist=hyp(vx,vy),mx=Math.floor(dist);
   if(dist>1e-5){const f2=1/(mx+1);for(let i=0;i<=mx;i++){let nx=px+vx*f2,ny=py+vy*f2;if(tbox(nx,ny)){let h=0;if(tbox(px,ny)){ny=py;vy=0;h++}if(tbox(nx,py)){nx=px;vx=0;h++}if(!h){ny=py;vy=0;nx=px;vx=0}}px=nx;py=ny}}
   s.vx=Math.trunc(vx/ramp*256)/256;s.vy=Math.trunc(vy*256)/256;s.x=Math.floor(px+.5);s.y=Math.floor(py+.5)}
  function reckon(R,off){let st=null;for(const r of R){const tc=r[13];if(!tc){st=null;continue}
@@ -185,10 +196,17 @@ async function parseDemo(buf,prog){
  const cnt={};merged.forEach(p=>{const k=cnt[p.name]=(cnt[p.name]||0)+1;if(k>1)p.name+=` (client ${k})`});   // same person with two clients at once
  out.splice(0,out.length,...merged)}
 ev.sort((a,b)=>a[0]-b[0]);
- pg(.96,'Detecting teams');const mem={},op={},segs=[],lv=(n,t)=>{const tm=mem[n];delete mem[n];if(tm in op){op[tm].cur.delete(n);op[tm].e=t;if(!op[tm].cur.size)delete op[tm]}},jn=(n,tm,t)=>{lv(n,t);if(!tm)return;mem[n]=tm;if(!(tm in op)){op[tm]={team:tm,s:t,e:t,m:[],fin:null,fs:null,go:null,cur:new Set};segs.push(op[tm])}op[tm].cur.add(n);if(!op[tm].m.includes(n))op[tm].m.push(n)};
+ pg(.96,'Detecting teams');const mem={},op={},segs=[],fins=[],lv=(n,t)=>{const tm=mem[n];delete mem[n];if(tm in op){op[tm].cur.delete(n);op[tm].e=t;if(!op[tm].cur.size)delete op[tm]}},jn=(n,tm,t)=>{lv(n,t);if(!tm)return;mem[n]=tm;if(!(tm in op)){op[tm]={team:tm,s:t,e:t,m:[],fin:null,fs:null,go:null,cur:new Set};segs.push(op[tm])}op[tm].cur.add(n);if(!op[tm].m.includes(n))op[tm].m.push(n)};
  for(const[t,tx]of sysm){let g;if(g=tx.match(/^'(.+)' joined team (\d+)$/))jn(g[1],+g[2],t);if(g=tx.match(/^'(.+)' has left the game/))lv(g[1],t);if(g=tx.match(/^Team (\d+) started with \d+ players?: (.*)$/)){const tm=+g[1],L=g[2];for(const n of new Set([...out.flatMap(p=>p.names).filter(n=>(', '+L+', ').includes(', '+n+', ')),...L.split(', ')]))if(mem[n]!==tm)jn(n,tm,t);if(op[tm])op[tm].go=t}else if((g=tx.match(/^Team (\d+) started with/))&&op[+g[1]])op[+g[1]].go=t;
-  if((g=tx.match(/^(.+) finished in: (\d+) minute\(s\) ([\d.]+) second\(s\)$/))&&mem[g[1]]&&op[mem[g[1]]]&&op[mem[g[1]]].fin===null){const o=op[mem[g[1]]];o.fin=g[2]+':'+parseFloat(g[3]).toFixed(2).padStart(5,'0');o.fs=t;o.e=t}}
- const dur=S(tick),teams=[];for(const o of segs){const pl=out.map((p,i)=>p.names.some(n=>o.m.includes(n))&&p.iv.some(([a,b])=>a<=o.e&&b>=o.s)?i:-1).filter(i=>i>=0);if(o.e==o.s&&!o.fin)o.e=dur;if(pl.length)teams.push({n:'Team '+o.team,s:o.s,e:o.e,pl,fin:o.fin,fs:o.fs,go:o.go,names:o.m})}
+  if(g=tx.match(/^(.+) finished in: (\d+) minute\(s\) +([\d.]+) second\(s\)$/)){fins.push({n:g[1],t,min:+g[2],sec:parseFloat(g[3])});if(mem[g[1]]&&op[mem[g[1]]]&&op[mem[g[1]]].fin===null){const o=op[mem[g[1]]];o.fin=g[2]+':'+parseFloat(g[3]).toFixed(2).padStart(5,'0');o.fs=t;o.e=t}}}
+ // everyone who finishes at the same moment with the same time was in one team (covers demos that start after the team formed or lack join/start messages)
+ const fg=[];for(const f of fins){const G=fg.find(x=>Math.abs(x.t-f.t)<1.5&&x.min==f.min&&x.sec==f.sec);G?G.n.push(f.n):fg.push({t:f.t,min:f.min,sec:f.sec,n:[f.n]})}
+ for(const G of fg){const fin=G.min+':'+G.sec.toFixed(2).padStart(5,'0'),run=G.min*60+G.sec,have=out.filter(p=>p.names.some(n=>G.n.includes(n))&&p.rt.length>=200),s0=segs.find(o=>o.fin===fin&&Math.abs(o.fs-G.t)<1.5);
+  if(s0){for(const n of G.n)if(!s0.m.includes(n))s0.m.push(n);continue}
+  if(!(have.some(p=>p.loc)||have.length>=2))continue;
+  segs.push({team:null,s:Math.max(0,G.t-run),e:G.t,m:G.n.slice(),fin,fs:G.t,go:Math.max(0,G.t-run)})}
+ const dur=S(tick),teams=[];for(const o of segs){const pl=out.map((p,i)=>p.names.some(n=>o.m.includes(n))&&p.iv.some(([a,b])=>a<=o.e&&b>=o.s)?i:-1).filter(i=>i>=0);if(o.e==o.s&&!o.fin)o.e=dur;if(pl.length)teams.push({n:o.team==null?`Team (finish ${o.fin})`:'Team '+o.team,s:o.s,e:o.e,pl,fin:o.fin,fs:o.fs,go:o.go,names:o.m})}
+ {const ri=out.findIndex(p=>p.loc);if(ri>=0&&!teams.some(t=>t.pl.includes(ri)))teams.push({n:'Recorder only (no team detected)',s:0,e:dur,pl:[ri],fin:null,fs:null,go:null,solo:true})}
  return{D:{p:out,teams,ev,W,H:H_,dur,date:H.date,map:H.map,crc:H.crc,sha:sha||'n/a (older demo version)',layers:lay,tiles,file:H.type,hasPl,diag:{ver,net:str(8,72),nsn,nmsg:msgs.length,ctr,errs,mapEmbedded:msz>0,mapOk:W>1}},G:grid,M:mapB}}
 
 const $=s=>document.querySelector(s),C=['#e6194b','#3cb44b','#4363d8','#f58231','#911eb4','#2aa5a5','#c9a400','#f032e6','#808000','#9a6324','#888','#e11d9a'];
@@ -217,7 +235,7 @@ function warns(D,S,seg){const w=[],d=D.diag||{};
  if(!D.hasPl)w.push('This server does not send DDNet player flags, so pause / spectating / AFK time is unavailable.');
  if(!d.mapEmbedded)w.push('The map is not embedded in this demo: no map background, no position simulation, no map download.');else if(!d.mapOk)w.push('The embedded map could not be read: no map background and no position simulation.');
  if(!D.teams.length)w.push('No team was detected (join / start / finish messages missing). Choose "Manual selection" to pick the players and the run start / end yourself.');
- else{if(!S.some(p=>p.loc))w.push('The recording player could not be identified, so the first team was selected.');if(seg&&seg.names&&(seg.go==null||seg.fs==null))w.push(`${seg.n}: no start or finish message, so its window is the whole team session.`)}
+ else{if(!S.some(p=>p.loc))w.push('The recording player could not be identified, so the first team was selected.');if(seg&&seg.solo)w.push('The recording player is not in any detected team, so only the recorder is analysed. Use "Manual selection" to add other players.');else if(seg&&seg.names){if(seg.go==null)w.push(`${seg.n}: no start message, so its window starts when the team formed.`);if(seg.fs==null)w.push(`${seg.n}: no finish message (it may not have finished in this demo), so its window ends with the team session.`)}}
  return w}
 function parseT(s){s=String(s).trim();const m=s.match(/^(\d+):(\d+(?:\.\d+)?)$/);if(m)return +m[1]*60+ +m[2];const n=Number(s);return s===''||isNaN(n)?null:n}
 function defaultManualSel(D){return D.p.map((p,i)=>p.rt.length>=200?i:-1).filter(i=>i>=0)}
