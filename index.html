@@ -393,7 +393,7 @@ function drawMap(){const cv=$('#mc');if(!cv)return;let hs='',mxs=0;const x=cv.ge
   freeze:'<b>Freeze heatmap</b> – where players were <i>frozen</i>. '+bar+' yellow = a few seconds of frozen time on that tile, red = the most (up to '+hms(mxs)+' on one tile; colours are relative to the worst tile). <b>Circles</b> = where each individual freeze started, coloured by player, bigger = longer freeze. Use it to find the trouble spots of the map; the table lists the worst 6×6-tile areas.'+ter};
  mn.innerHTML=INFO[mode];const ab=$('#aboutc');if(ab)ab.style.display=INFO[mode]?'':'none';$('#hs').innerHTML=hs?`<div class=tw><table><tr><th>Worst areas (tile x range, y range) – click a row to highlight it on the map</th><th>Total time</th><th>Who</th></tr>${hs}</table></div>`:''}}
 function fol(i){follow=follow==i?-1:i;hl=null;cam=null;lastC=null;render()}
-function hlA(x,y){hl={x,y};follow=-1;cam=null;const N={saved:'saved',self:'recovered alone',failed:'hooked, then died',died:'died frozen',spec:'spec while frozen',cut:'unknown'},L=P.flatMap(i=>S[i].fz.filter(e=>e[2]/4>=x&&e[2]/4<x+6&&e[3]/4>=y&&e[3]/4<y+6).map(e=>[i,e])).sort((a,b)=>a[1][0]-b[1][0]);
+function hlA(x,y){hl={x,y};if(mode=='replay')follow=-1;cam=null;const N={saved:'saved',self:'recovered alone',failed:'hooked, then died',died:'died frozen',spec:'spec while frozen',cut:'unknown'},L=P.flatMap(i=>S[i].fz.filter(e=>e[2]/4>=x&&e[2]/4<x+6&&e[3]/4>=y&&e[3]/4<y+6).map(e=>[i,e])).sort((a,b)=>a[1][0]-b[1][0]);
  $('#hl2').innerHTML=`<div class=m style="margin-top:8px">Freezes that started in this area (${L.length})${L.length>15?', first 15 shown':''} – click ▶ to replay it zoomed on the spot:</div>`+tbl(['Player','At','Length','Result',''],L.slice(0,15).map(([i,e])=>[nm(i),fmt(e[0]),hms(e[1]-e[0]),N[e[8]],`<a class=s onclick="watch(${i},${e[0]})">▶</a>`]));drawMap()}
 function watch(i,t){follow=i;cam=null;hl=null;lastC=null;seek(t)}
 function seek(t){tab='mp';mode='replay';cur=Math.max(t0,t-3);render()}
@@ -405,18 +405,18 @@ function drawMS(){const cv=$('#ms');if(!cv)return;const r=2,w=cv.width=cv.client
  if(!cv.onclick)cv.onclick=e=>{const b=cv.getBoundingClientRect();cur=t0+(e.clientX-b.left)/b.width*(t1-t0);const s=$('#sl');s&&(s.value=cur);drawMap()}}
 let mapDrag=false;
 function camFromView(cv){const v=lastV;return{x:v.a+cv.width/v.sc/2,y:v.b+cv.height/v.sc/2,w:cv.width/v.sc}}
-function zoomMap(e,k){const cv=$('#mc'),v=lastV;if(!cv||!v)return;const r=cv.getBoundingClientRect();cam=zoomCam({a:v.a,b:v.b,w:cv.width/v.sc},(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height,k,8,Math.max(60,D.W,D.H*cv.width/cv.height)*1.6,cv.height/cv.width);follow=-1;hl=null;drawMap()}
-function zoomKey(k){if(follow>=0){fw=Math.min(400,Math.max(10,fw*k));drawMap();return}const cv=$('#mc');if(!cv)return;const r=cv.getBoundingClientRect();zoomMap({clientX:r.left+r.width/2,clientY:r.top+r.height/2},k)}
+function zoomMap(e,k){const cv=$('#mc'),v=lastV;if(!cv||!v)return;const r=cv.getBoundingClientRect();cam=zoomCam({a:v.a,b:v.b,w:cv.width/v.sc},(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height,k,8,Math.max(60,D.W,D.H*cv.width/cv.height)*1.6,cv.height/cv.width);if(mode=='replay')follow=-1;hl=null;drawMap()}
+function zoomKey(k){if(follow>=0&&mode=='replay'){fw=Math.min(400,Math.max(10,fw*k));drawMap();return}const cv=$('#mc');if(!cv)return;const r=cv.getBoundingClientRect();zoomMap({clientX:r.left+r.width/2,clientY:r.top+r.height/2},k)}
 function bindMapZoom(cv){const ptr=new Map();let lastD=0,moved=0;cv.style.touchAction='none';
- cv.onwheel=e=>{e.preventDefault();const k=e.deltaY>0?1.15:.87;if(follow>=0){fw=Math.min(400,Math.max(10,fw*k));drawMap()}else zoomMap(e,k)};
+ cv.onwheel=e=>{e.preventDefault();const k=e.deltaY>0?1.15:.87;if(follow>=0&&mode=='replay'){fw=Math.min(400,Math.max(10,fw*k));drawMap()}else zoomMap(e,k)};
  cv.onpointerdown=e=>{ptr.set(e.pointerId,[e.clientX,e.clientY]);moved=0;lastD=0;mapDrag=false;try{cv.setPointerCapture(e.pointerId)}catch(x){}};
  cv.onpointermove=e=>{const p=ptr.get(e.pointerId);if(!p||!lastV)return;const dx=e.clientX-p[0],dy=e.clientY-p[1];ptr.set(e.pointerId,[e.clientX,e.clientY]);
   if(ptr.size==2){const[a,b]=[...ptr.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(lastD)zoomMap({clientX:(a[0]+b[0])/2,clientY:(a[1]+b[1])/2},lastD/d);lastD=d;mapDrag=true;return}
   moved+=Math.abs(dx)+Math.abs(dy);if(moved<6)return;mapDrag=true;
-  if(!cam||follow>=0||hl){cam=camFromView(cv);follow=-1;hl=null}
+  if(!cam||(follow>=0&&mode=='replay')||hl){cam=camFromView(cv);if(mode=='replay')follow=-1;hl=null}
   const r=cv.getBoundingClientRect(),tpp=cv.width/r.width/lastV.sc;cam.x-=dx*tpp;cam.y-=dy*tpp;drawMap()};
  const up=e=>{ptr.delete(e.pointerId);lastD=0};cv.onpointerup=up;cv.onpointercancel=up;
- cv.ondblclick=()=>{cam=null;hl=null;follow=-1;lastC=null;drawMap()}}
+ cv.ondblclick=()=>{cam=null;hl=null;if(mode=='replay')follow=-1;lastC=null;drawMap()}}
 function setMode(m){mode=m;document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==m));drawMap()}
 function updPanel(){const rows=document.querySelectorAll('.prow');for(const r of rows){const i=+r.dataset.p,p=S[i],st=r.querySelector('.st'),b=r.querySelector('.fbtn');if(!p||!st)continue;
  const z=pzSt(p,cur),frozen=p.fz.some(e=>e[0]<=cur&&cur<=e[1]),pos=at(p,cur);
@@ -485,7 +485,7 @@ R.dt0=R.dt;R.dt=function(){return R.ev()+'<h2 class=sec>Players</h2>'+playersFul
 R.tv=function(){return'<h2 class=sec style="margin-top:0">Team</h2>'+R.tm()+'<h2 class=sec>Movement</h2>'+R.mv().replace(zb(),'')};
 function dl(n,t,m){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()}
 function post(){const ctl=(id,f)=>{const e=$(id);if(!e)return;const k=e.tagName=='BUTTON'||e.tagName=='A'?'onclick':e.type=='range'?'oninput':'onchange';e[k]=f};
- if(tab=='mp'){$('.seg').onclick=e=>{const b=e.target.closest('button[data-mode]');if(b)setMode(b.dataset.mode)};ctl('#sp',e=>spd=+e.target.value);ctl('#sl',e=>{cur=+e.target.value;drawMap()});ctl('#pp',()=>{play=!play;$('#pp').textContent=play?'⏸':'▶';if(play&&mode!='replay')setMode('replay')});ctl('#zin',()=>zoomKey(.8));ctl('#zout',()=>zoomKey(1.25));ctl('#zfit',()=>{cam=null;follow=-1;hl=null;lastC=null;drawMap()});$('.panel').onclick=e=>{const b=e.target.closest('.fbtn');if(b)fol(+b.dataset.f)};const mc=$('#mc');mc.style.cursor='pointer';mc.onclick=e=>{if(mapDrag){mapDrag=false;return}if(!lastV||mode!='replay')return;const r=mc.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*mc.width/lastV.sc+lastV.a,py=(e.clientY-r.top)/r.height*mc.height/lastV.sc+lastV.b;let best=-1,bd=Math.max(2,24/lastV.sc);for(const i of P){const a=at(S[i],cur);if(!a)continue;const d=Math.hypot(a[0]-px,a[1]-1-py);if(d<bd){bd=d;best=i}}if(best>=0)fol(best)};bindMapZoom(mc);drawMap()}
+ if(tab=='mp'){$('.seg').onclick=e=>{const b=e.target.closest('button[data-mode]');if(b)setMode(b.dataset.mode)};ctl('#sp',e=>spd=+e.target.value);ctl('#sl',e=>{cur=+e.target.value;drawMap()});ctl('#pp',()=>{play=!play;$('#pp').textContent=play?'⏸':'▶';if(play&&mode!='replay')setMode('replay')});ctl('#zin',()=>zoomKey(.8));ctl('#zout',()=>zoomKey(1.25));ctl('#zfit',()=>{cam=null;if(mode=='replay')follow=-1;hl=null;lastC=null;drawMap()});$('.panel').onclick=e=>{const b=e.target.closest('.fbtn');if(b)fol(+b.dataset.f)};const mc=$('#mc');mc.style.cursor='pointer';mc.onclick=e=>{if(mapDrag){mapDrag=false;return}if(!lastV||mode!='replay')return;const r=mc.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*mc.width/lastV.sc+lastV.a,py=(e.clientY-r.top)/r.height*mc.height/lastV.sc+lastV.b;let best=-1,bd=Math.max(2,24/lastV.sc);for(const i of P){const a=at(S[i],cur);if(!a)continue;const d=Math.hypot(a[0]-px,a[1]-1-py);if(d<bd){bd=d;best=i}}if(best>=0)fol(best)};bindMapZoom(mc);drawMap()}
  if(tab=='fr'){ctl('#md2',e=>{minD=+e.target.value;render()});ctl('#sf',e=>{stF=e.target.value;render()});ctl('#hm',()=>{tab='mp';mode='freeze';render()});reg($('#fc'),drawT,110)}
  if(tab=='ov')reg($('#fc'),drawT,110);
  if(tab=='tv'){plot($('#c1'),window._sp,{u:' tiles'});plot($('#c2'),window._bars,{u:' s frozen',bw:10,fv:v=>hms(v)+' frozen'});plot($('#c3'),window._mv,{u:' t/s',gap:2.5});plot($('#c4'),window._pg,{u:' ms',gap:3.5})}
@@ -546,7 +546,7 @@ function applyTh(){const r=document.documentElement;th=='auto'?r.removeAttribute
 $('#th').onclick=()=>{th={auto:'dark',dark:'light',light:'auto'}[th];applyTh()};applyTh();
 addEventListener('keydown',e=>{if(!D||tab!='mp')return;const tg=e.target.tagName;if((tg=='INPUT'&&e.target.type!='range')||tg=='SELECT'||tg=='TEXTAREA')return;
  const mv=d=>{cur=Math.min(t1,Math.max(t0,cur+d));const s=$('#sl');s&&(s.value=cur);drawMap();e.preventDefault()};
- if(e.key=='ArrowLeft')mv(e.shiftKey?-30:-5);else if(e.key=='ArrowRight')mv(e.shiftKey?30:5);else if(e.key==' '&&tg!='BUTTON'){const b=$('#pp');if(b){b.click();e.preventDefault()}}else if(e.key=='+'||e.key=='='||e.key=='-'||e.key=='_'){zoomKey(e.key=='+'||e.key=='='?.8:1.25);e.preventDefault()}else if(e.key=='0'){cam=null;follow=-1;hl=null;lastC=null;drawMap()}});
+ if(e.key=='ArrowLeft')mv(e.shiftKey?-30:-5);else if(e.key=='ArrowRight')mv(e.shiftKey?30:5);else if(e.key==' '&&tg!='BUTTON'){const b=$('#pp');if(b){b.click();e.preventDefault()}}else if(e.key=='+'||e.key=='='||e.key=='-'||e.key=='_'){zoomKey(e.key=='+'||e.key=='='?.8:1.25);e.preventDefault()}else if(e.key=='0'){cam=null;if(mode=='replay')follow=-1;hl=null;lastC=null;drawMap()}});
 const POPS={scopebtn:'scopepop',sharebtn:'sharepop'};
 function closePops(){for(const k in POPS){$('#'+POPS[k]).hidden=true;$('#'+k).setAttribute('aria-expanded','false')}}
 for(const k in POPS)$('#'+k).onclick=()=>{const p=$('#'+POPS[k]),open=p.hidden;closePops();p.hidden=!open;$('#'+k).setAttribute('aria-expanded',String(open));if(open&&k=='sharebtn')bindShare()};
