@@ -403,8 +403,8 @@ function bindMapZoom(cv){const ptr=new Map();let lastD=0,moved=0;cv.style.touchA
  cv.ondblclick=()=>{cam=null;hl=null;follow=-1;lastC=null;drawMap()}}
 function setMode(m){mode=m;document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==m));drawMap()}
 function updPanel(){const rows=document.querySelectorAll('.prow');for(const r of rows){const i=+r.dataset.p,p=S[i],st=r.querySelector('.st'),b=r.querySelector('.fbtn');if(!p||!st)continue;
- const z=pzSt(p,cur),e=p.fz.find(e=>e[0]<=cur&&cur<=e[1]),pos=at(p,cur),wh=wallHook(p,cur),k=bs(p.rt,cur*50),tg=k>=0&&cur*50-p.rt[k]<=4&&p.rk[k]>0?p.rk[k]-1:-1;
- let txt,cls='';if(z==3){txt='Spectating (S)';cls='spec'}else if(z==2){txt='Paused (P)';cls='pau'}else if(e){txt='Frozen';cls='frz'}else if(wh){txt='Hook on wall';cls='wall'}else if(tg>=0&&S[tg]){txt='Hooking '+S[tg].name;cls='ok'}else if(!pos){txt='Not in view'}else txt='Free';
+ const z=pzSt(p,cur),frozen=p.fz.some(e=>e[0]<=cur&&cur<=e[1]),pos=at(p,cur);
+ let txt='Alive',cls='ok';if(z==3){txt='Spec';cls='spec'}else if(z==2){txt='Pause';cls='pau'}else if(frozen){txt='Frozen';cls='frz'}else if(!pos){txt='Out of view';cls=''}
  if(st.dataset.v!==txt){st.dataset.v=txt;st.textContent=txt;st.className='st '+cls}const f=follow==i;if(b&&b.dataset.on!==String(f)){b.dataset.on=String(f);b.textContent=f?'Following':'Follow';b.classList.toggle('pri',f)}}}
 
 function lgOpen(){try{return localStorage.getItem('lg')!=='0'}catch(e){return true}} // the legend stays hidden once the user hides it
